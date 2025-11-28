@@ -11,7 +11,4 @@ Data warehouse built with Azure Synapse Analytics implementing medallion (Bronze
 ## Tech Stack
 
 - Azure Synapse Analytics
-- PySpark Notebooks
 - Azure Data Lake Gen2
-- Delta Lake / Parquet
-- Git version control
