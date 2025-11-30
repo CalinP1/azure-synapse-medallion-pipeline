@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "1",
-				"spark.autotune.trackingId": "d215dc63-074b-44ce-942d-29eb377fe0b7"
+				"spark.autotune.trackingId": "6188e567-3b92-48a9-80d2-b07ce01d8dfc"
 			}
 		},
 		"metadata": {
@@ -69,10 +69,10 @@
 					"import zipfile\n",
 					"import io\n",
 					"from datetime import datetime\n",
-					"print(\"Libs imported succesfully\")\n",
-					"print(f\"Check the time - {datetime.now()}\")"
+					"display(\"Libs imported succesfully\")\n",
+					"display(f\"Check the time - {datetime.now()}\")"
 				],
-				"execution_count": 10
+				"execution_count": 50
 			},
 			{
 				"cell_type": "markdown",
@@ -92,7 +92,7 @@
 				"source": [
 					"from notebookutils import mssparkutils"
 				],
-				"execution_count": 11
+				"execution_count": 51
 			},
 			{
 				"cell_type": "code",
@@ -101,7 +101,7 @@
 					"vault_name = \"kaggle-name\"\n",
 					"vault_key = 'kaggle-key'"
 				],
-				"execution_count": 13
+				"execution_count": 52
 			},
 			{
 				"cell_type": "code",
@@ -109,7 +109,7 @@
 					"vault_kaggle_name = mssparkutils.credentials.getSecret(vault_url, vault_name)\n",
 					"vault_kaggle_key = mssparkutils.credentials.getSecret(vault_url, vault_key)"
 				],
-				"execution_count": 18
+				"execution_count": 53
 			},
 			{
 				"cell_type": "markdown",
@@ -126,11 +126,56 @@
 			},
 			{
 				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"outputs_hidden": false
+					}
+				},
 				"source": [
-					"print(f\"Username type: {type(vault_kaggle_name)}\")\n",
-					"print(f\"Username length: {len(vault_kaggle_name)} characters\")"
+					"display(f\"Username type: {type(vault_kaggle_name)}\")\n",
+					"display(f\"Username length: {len(vault_kaggle_name)} characters\")"
 				],
-				"execution_count": 19
+				"execution_count": 54
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Kaggle API call"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"dataset_name = \"olistbr/brazilian-ecommerce\"\n",
+					"kaggle_dataset_url = f\"https://www.kaggle.com/api/v1/datasets/download/{dataset_name}\""
+				],
+				"execution_count": 56
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"kaggle_response = requests.get(kaggle_dataset_url,auth=(vault_kaggle_name,vault_kaggle_key))\n",
+					"if kaggle_response.status_code == 200:\n",
+					"    display(\"SUCCESS!!\")\n",
+					"    size_mb = len(kaggle_response.content) / 1024 / 1024\n",
+					"    display(f\"Size: {size_mb:.2f} MB\")\n",
+					"\n",
+					"    zip_file = zipfile.ZipFile(io.BytesIO(kaggle_response.content))\n",
+					"    file_list = zip_file.namelist()\n",
+					"    display(f\"Files in the datase: {len(file_list)}\")\n",
+					"    for file in file_list:\n",
+					"        display(file)\n",
+					"else:\n",
+					"    display(f\"We have a problem... CODE:{kaggle_response.status_code}\")"
+				],
+				"execution_count": 59
 			}
 		]
 	}
