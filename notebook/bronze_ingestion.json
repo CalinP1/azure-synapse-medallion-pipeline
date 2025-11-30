@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "1",
-				"spark.autotune.trackingId": "8bd55f45-648c-425c-9412-97e21857e8b9"
+				"spark.autotune.trackingId": "d215dc63-074b-44ce-942d-29eb377fe0b7"
 			}
 		},
 		"metadata": {
@@ -25,7 +25,7 @@
 			"enableDebugMode": false,
 			"kernelspec": {
 				"name": "synapse_pyspark",
-				"display_name": "python"
+				"display_name": "Synapse PySpark"
 			},
 			"language_info": {
 				"name": "python"
@@ -49,11 +49,88 @@
 		},
 		"cells": [
 			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"**Importing the libraries needed. Pyspark to work with data, requests for retrieveing data from kaggle, zipfile to unzip the retrieved data, io to transform the binary data to a file-like object.**"
+				]
+			},
+			{
 				"cell_type": "code",
 				"source": [
-					"print(\"Hello!\")"
+					"from pyspark.sql import SparkSession\n",
+					"import requests\n",
+					"import zipfile\n",
+					"import io\n",
+					"from datetime import datetime\n",
+					"print(\"Libs imported succesfully\")\n",
+					"print(f\"Check the time - {datetime.now()}\")"
 				],
-				"execution_count": null
+				"execution_count": 10
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"We import Microsoft spark utilities to retrieve the secret name and key from vault for the Kaggle api fetch (this method is specific only for Azure Synapse)"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"from notebookutils import mssparkutils"
+				],
+				"execution_count": 11
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"vault_url = \"https://kaggle-key-api.vault.azure.net/\"\n",
+					"vault_name = \"kaggle-name\"\n",
+					"vault_key = 'kaggle-key'"
+				],
+				"execution_count": 13
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"vault_kaggle_name = mssparkutils.credentials.getSecret(vault_url, vault_name)\n",
+					"vault_kaggle_key = mssparkutils.credentials.getSecret(vault_url, vault_key)"
+				],
+				"execution_count": 18
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"We check to see if we did the right credentials retrieval"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"print(f\"Username type: {type(vault_kaggle_name)}\")\n",
+					"print(f\"Username length: {len(vault_kaggle_name)} characters\")"
+				],
+				"execution_count": 19
 			}
 		]
 	}
