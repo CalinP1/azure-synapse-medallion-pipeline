@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "1",
-				"spark.autotune.trackingId": "c9096cf7-2d18-4427-ba66-2728e3a2d26f"
+				"spark.autotune.trackingId": "5cb50809-5274-46dc-b0d7-6f822e17df49"
 			}
 		},
 		"metadata": {
@@ -72,7 +72,7 @@
 					"display(\"Libs imported succesfully\")\n",
 					"display(f\"Check the time - {datetime.now()}\")"
 				],
-				"execution_count": 65
+				"execution_count": 1
 			},
 			{
 				"cell_type": "markdown",
@@ -92,7 +92,7 @@
 				"source": [
 					"from notebookutils import mssparkutils"
 				],
-				"execution_count": 66
+				"execution_count": 2
 			},
 			{
 				"cell_type": "code",
@@ -101,7 +101,7 @@
 					"vault_name = \"kaggle-name\"\n",
 					"vault_key = 'kaggle-key'"
 				],
-				"execution_count": 67
+				"execution_count": 3
 			},
 			{
 				"cell_type": "code",
@@ -109,7 +109,7 @@
 					"vault_kaggle_name = mssparkutils.credentials.getSecret(vault_url, vault_name)\n",
 					"vault_kaggle_key = mssparkutils.credentials.getSecret(vault_url, vault_key)"
 				],
-				"execution_count": 68
+				"execution_count": 4
 			},
 			{
 				"cell_type": "markdown",
@@ -135,7 +135,7 @@
 					"display(f\"Username type: {type(vault_kaggle_name)}\")\n",
 					"display(f\"Username length: {len(vault_kaggle_name)} characters\")"
 				],
-				"execution_count": 69
+				"execution_count": 5
 			},
 			{
 				"cell_type": "markdown",
@@ -156,7 +156,7 @@
 					"dataset_name = \"olistbr/brazilian-ecommerce\"\n",
 					"kaggle_dataset_url = f\"https://www.kaggle.com/api/v1/datasets/download/{dataset_name}\""
 				],
-				"execution_count": 70
+				"execution_count": 6
 			},
 			{
 				"cell_type": "code",
@@ -175,7 +175,7 @@
 					"else:\n",
 					"    display(f\"We have a problem... CODE:{kaggle_response.status_code}\")"
 				],
-				"execution_count": 71
+				"execution_count": 7
 			},
 			{
 				"cell_type": "markdown",
@@ -197,21 +197,21 @@
 					"container = \"bronze\"\n",
 					"base_folder = \"raw/ecommerce\""
 				],
-				"execution_count": 72
+				"execution_count": 8
 			},
 			{
 				"cell_type": "code",
 				"source": [
 					"bronze_path = f\"abfss://{container}@{storage_account}.dfs.core.windows.net/{base_folder}\""
 				],
-				"execution_count": 73
+				"execution_count": 9
 			},
 			{
 				"cell_type": "code",
 				"source": [
 					"import pandas as pd"
 				],
-				"execution_count": 77
+				"execution_count": 10
 			},
 			{
 				"cell_type": "code",
@@ -239,7 +239,28 @@
 					"    \n",
 					"display(\"Done all!\")"
 				],
-				"execution_count": 79
+				"execution_count": 11
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"display(\"Verification for Bronze layer\")\n",
+					"\n",
+					"bronze_datasets = mssparkutils.fs.ls(bronze_path)\n",
+					"\n",
+					"display(f\"Total datasets: {len(bronze_datasets)}\")\n",
+					"\n",
+					"for dataset in bronze_datasets:\n",
+					"    display(f\"{dataset.name}\")\n",
+					"    \n",
+					"    sample_df = spark.read.parquet(dataset.path)\n",
+					"    display(f\"Rows: {sample_df.count()}\")\n",
+					"    display(f\"Columns: {len(sample_df.columns)}\")\n",
+					"    display(f\"Sample columns: {sample_df.columns[:5]}\")\n",
+					"\n",
+					"display(\"Bronze layer verification complete!\")"
+				],
+				"execution_count": 12
 			}
 		]
 	}
