@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "c25baa94-b570-4f48-bee6-a7a95b13d21f"
+				"spark.autotune.trackingId": "523663a5-3b14-4710-afcf-4c4d684743e2"
 			}
 		},
 		"metadata": {
@@ -55,7 +55,7 @@
 					"from pyspark.sql.types import *\n",
 					"from datetime import datetime"
 				],
-				"execution_count": 27
+				"execution_count": 10
 			},
 			{
 				"cell_type": "code",
@@ -68,7 +68,7 @@
 					"silver_path = f\"abfss://{silver_container}@{storage_account}.dfs.core.windows.net/cleaned\"\n",
 					""
 				],
-				"execution_count": 28
+				"execution_count": 11
 			},
 			{
 				"cell_type": "code",
@@ -81,7 +81,7 @@
 					"bronze_datasets = mssparkutils.fs.ls(bronze_path)\n",
 					"display(f\"Found {len(bronze_datasets)} datasets în Bronze\")"
 				],
-				"execution_count": 29
+				"execution_count": 12
 			},
 			{
 				"cell_type": "markdown",
@@ -111,7 +111,7 @@
 					"\n",
 					"display(f\"Done! Available datasets: {list(dfs.keys())}\")"
 				],
-				"execution_count": 30
+				"execution_count": 13
 			},
 			{
 				"cell_type": "markdown",
@@ -129,6 +129,9 @@
 			{
 				"cell_type": "code",
 				"metadata": {
+					"jupyter": {
+						"outputs_hidden": true
+					},
 					"collapsed": false
 				},
 				"source": [
@@ -171,14 +174,83 @@
 					"    }\n",
 					"    "
 				],
-				"execution_count": 37
+				"execution_count": 14
 			},
 			{
 				"cell_type": "code",
 				"source": [
 					"quality_report"
 				],
-				"execution_count": 38
+				"execution_count": 15
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Cleaning Data process"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"cleaned_data = {}\n",
+					"\n",
+					"for dataset_name, df in dfs.items():\n",
+					"    display(f\"START! Now working on: {dataset_name}\")\n",
+					"\n",
+					"    # duplicates\n",
+					"    original_count = df.count()\n",
+					"    df_clean = df.dropDuplicates()\n",
+					"\n",
+					"    # null values\n",
+					"    df_clean = df_clean.dropna(how=\"all\")\n",
+					"\n",
+					"    df_clean = df_clean.withColumn(\"processed_date\", F.current_date()) \\\n",
+					"                       .withColumn(\"processed_timestamp\", F.current_timestamp()) \\\n",
+					"                       .withColumn(\"source_layer\", F.lit(\"bronze\"))\n",
+					"\n",
+					"    cleaned_data[dataset_name] = df_clean\n",
+					"\n",
+					"    new_count = df_clean.count()\n",
+					"    removed_data = original_count - new_count\n",
+					"    display(f\"We have removed {removed_data} duplicate rows\")\n",
+					"\n",
+					"    display(f\"DONE! Raw dataset {original_count} - Cleaned dataset {new_count}\")\n",
+					"\n",
+					""
+				],
+				"execution_count": 17
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Writing data to the silver container"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"for dataset_name, df_clean in cleaned_data.items():\n",
+					"    display(f\"START! For {dataset_name}\")\n",
+					"    output_path = f\"{silver_path}/{dataset_name}\"\n",
+					"    df_clean.write.mode(\"overwrite\").parquet(output_path)\n",
+					"\n",
+					"    display(f\"DONE! For {dataset_name} we have writen in the {output_path} - {df_clean.count()} rows\")"
+				],
+				"execution_count": 19
 			}
 		]
 	}
