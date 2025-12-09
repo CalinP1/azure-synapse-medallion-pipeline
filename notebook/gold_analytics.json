@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "74b632bc-6c64-4c48-9ca3-bad30542dd83"
+				"spark.autotune.trackingId": "7a862069-f10a-4836-9227-ecf2aab1e860"
 			}
 		},
 		"metadata": {
@@ -56,7 +56,7 @@
 					"from pyspark.sql.window import Window\n",
 					"from datetime import datetime"
 				],
-				"execution_count": 5
+				"execution_count": 12
 			},
 			{
 				"cell_type": "code",
@@ -66,7 +66,7 @@
 					"silver_container = \"silver\"\n",
 					"gold_container = \"gold\""
 				],
-				"execution_count": 6
+				"execution_count": 13
 			},
 			{
 				"cell_type": "code",
@@ -77,7 +77,7 @@
 					"display(f\"Source: {silver_path}\")\n",
 					"display(f\"Target: {gold_path}\")"
 				],
-				"execution_count": 7
+				"execution_count": 14
 			},
 			{
 				"cell_type": "code",
@@ -96,10 +96,222 @@
 			},
 			{
 				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
 				"source": [
-					"type(customer_dataset)"
+					"display(\"Building dim_customers\")\n",
+					"\n",
+					"dim_customers = customer_dataset.select(\n",
+					"    F.col(\"customer_id\"),\n",
+					"    F.col(\"customer_unique_id\"),\n",
+					"    F.col(\"customer_zip_code_prefix\"),\n",
+					"    F.col(\"customer_city\"),\n",
+					"    F.col(\"customer_state\")\n",
+					").distinct()  \n",
+					"\n",
+					"dim_customers = dim_customers.withColumn(\"dim_load_date\", F.current_date())\n",
+					"\n",
+					"customer_count = dim_customers.count()\n",
+					"display(f\"dim_customers created: {customer_count:,} unique customers\")\n",
+					"\n",
+					"display(\"Sample dim_customers:\")\n",
+					"display(dim_customers.limit(5))"
 				],
 				"execution_count": 18
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"display(\"Building dim_products\")\n",
+					"\n",
+					"dim_products = products_dataset.select(\n",
+					"    F.col(\"product_id\"),\n",
+					"    F.col(\"product_category_name\"),\n",
+					"    F.col(\"product_name_lenght\"),  \n",
+					"    F.col(\"product_description_lenght\"),\n",
+					"    F.col(\"product_photos_qty\"),\n",
+					"    F.col(\"product_weight_g\"),\n",
+					"    F.col(\"product_length_cm\"),\n",
+					"    F.col(\"product_height_cm\"),\n",
+					"    F.col(\"product_width_cm\")\n",
+					").distinct() \n",
+					"\n",
+					"\n",
+					"dim_products = dim_products.withColumn(\"dim_load_date\", F.current_date())\n",
+					"\n",
+					"\n",
+					"product_count = dim_products.count()\n",
+					"display(f\"dim_products created: {product_count:,} unique products\")\n",
+					"\n",
+					"display(\"Sample dim_products:\")\n",
+					"display(dim_products.limit(5))"
+				],
+				"execution_count": 19
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"display(\"Building dim_sellers\")\n",
+					"\n",
+					"dim_sellers = sellers_dataset.select(\n",
+					"    F.col(\"seller_id\"),\n",
+					"    F.col(\"seller_zip_code_prefix\"),\n",
+					"    F.col(\"seller_city\"),\n",
+					"    F.col(\"seller_state\")\n",
+					").distinct()\n",
+					"\n",
+					"dim_sellers = dim_sellers.withColumn(\"dim_load_date\", F.current_date())\n",
+					"\n",
+					"seller_count = dim_sellers.count()\n",
+					"display(f\"dim_sellers created: {seller_count:,} unique sellers\")\n",
+					"\n",
+					"display(\"Sample dim_sellers:\")\n",
+					"display(dim_sellers.limit(5))"
+				],
+				"execution_count": 20
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"display(\"Building dim_date (time intelligence)\")\n",
+					"\n",
+					"dim_date = orders_dataset.select(\n",
+					"    F.to_date(F.col(\"order_purchase_timestamp\")).alias(\"full_date\")\n",
+					").distinct()\n",
+					"\n",
+					"dim_date = dim_date.withColumn(\"date_id\", F.date_format(F.col(\"full_date\"), \"yyyyMMdd\").cast(IntegerType())) \\\n",
+					"    .withColumn(\"year\", F.year(F.col(\"full_date\"))) \\\n",
+					"    .withColumn(\"quarter\", F.quarter(F.col(\"full_date\"))) \\\n",
+					"    .withColumn(\"month\", F.month(F.col(\"full_date\"))) \\\n",
+					"    .withColumn(\"month_name\", F.date_format(F.col(\"full_date\"), \"MMMM\")) \\\n",
+					"    .withColumn(\"day\", F.dayofmonth(F.col(\"full_date\"))) \\\n",
+					"    .withColumn(\"day_of_week\", F.dayofweek(F.col(\"full_date\"))) \\\n",
+					"    .withColumn(\"day_name\", F.date_format(F.col(\"full_date\"), \"EEEE\")) \\\n",
+					"    .withColumn(\"is_weekend\", F.when(F.dayofweek(F.col(\"full_date\")).isin(1, 7), True).otherwise(False)) \\\n",
+					"    .withColumn(\"dim_load_date\", F.current_date())\n",
+					"\n",
+					"dim_date = dim_date.select(\n",
+					"    \"date_id\", \"full_date\", \"year\", \"quarter\", \"month\", \"month_name\",\n",
+					"    \"day\", \"day_of_week\", \"day_name\", \"is_weekend\", \"dim_load_date\"\n",
+					")\n",
+					"\n",
+					"date_count = dim_date.count()\n",
+					"display(f\"dim_date created: {date_count:,} unique dates\")\n",
+					"\n",
+					"display(\"Sample dim_date:\")\n",
+					"display(dim_date.orderBy(\"date_id\").limit(5).toPandas())"
+				],
+				"execution_count": 21
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"display(\"Building fact_sales (FACT TABLE)\")\n",
+					"display(\"Joining: orders + order_items + payments\")\n",
+					"\n",
+					"fact_sales = order_items_dataset.select(\n",
+					"    F.col(\"order_id\"),\n",
+					"    F.col(\"order_item_id\"),\n",
+					"    F.col(\"product_id\"),\n",
+					"    F.col(\"seller_id\"),\n",
+					"    F.col(\"price\"),\n",
+					"    F.col(\"freight_value\")\n",
+					")\n",
+					"\n",
+					"fact_sales = fact_sales.join(\n",
+					"    orders_dataset.select(\"order_id\", \"customer_id\", \"order_purchase_timestamp\"),\n",
+					"    on=\"order_id\",\n",
+					"    how=\"inner\"\n",
+					")\n",
+					"\n",
+					"payments_agg = order_payments_dataset.groupBy(\"order_id\").agg(\n",
+					"    F.sum(\"payment_value\").alias(\"payment_value\")\n",
+					")\n",
+					"\n",
+					"fact_sales = fact_sales.join(\n",
+					"    payments_agg,\n",
+					"    on=\"order_id\",\n",
+					"    how=\"left\"\n",
+					")\n",
+					"\n",
+					"fact_sales = fact_sales.withColumn(\n",
+					"    \"date_id\",\n",
+					"    F.date_format(F.to_date(F.col(\"order_purchase_timestamp\")), \"yyyyMMdd\").cast(IntegerType())\n",
+					")\n",
+					"\n",
+					"fact_sales = fact_sales.withColumn(\n",
+					"    \"total_amount\",\n",
+					"    F.coalesce(F.col(\"payment_value\"), F.col(\"price\") + F.col(\"freight_value\"))\n",
+					")\n",
+					"\n",
+					"fact_sales = fact_sales.select(\n",
+					"    F.col(\"order_id\"),\n",
+					"    F.col(\"order_item_id\"),\n",
+					"    F.col(\"customer_id\"),      \n",
+					"    F.col(\"product_id\"),      \n",
+					"    F.col(\"seller_id\"),        \n",
+					"    F.col(\"date_id\"),          \n",
+					"    F.col(\"price\"),            \n",
+					"    F.col(\"freight_value\"),   \n",
+					"    F.col(\"payment_value\"),   \n",
+					"    F.col(\"total_amount\")     \n",
+					").withColumn(\"fact_load_date\", F.current_date())\n",
+					"\n",
+					"fact_count = fact_sales.count()\n",
+					"display(f\"fact_sales created: {fact_count:,} transactions\")\n",
+					"display(f\"Grain: One row = One order item (product in order)\")\n",
+					"\n",
+					"display(\"Sample fact_sales:\")\n",
+					"display(fact_sales.limit(5).toPandas())\n",
+					"\n",
+					"display(\"Metrics Summary:\")\n",
+					"fact_sales.select(\n",
+					"    F.sum(\"total_amount\").alias(\"total_revenue\"),\n",
+					"    F.avg(\"total_amount\").alias(\"avg_order_value\"),\n",
+					"    F.count(\"order_id\").alias(\"total_transactions\")\n",
+					").show()"
+				],
+				"execution_count": 22
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"display(\"Writing dim_customers\")\n",
+					"dim_customers.write.format(\"delta\").mode(\"overwrite\").save(f\"{gold_path}/dim_customers\")\n",
+					"display(f\"DONE! Written: {dim_customers.count():,} customers\")\n",
+					"\n",
+					"display(\"Writing dim_products\")\n",
+					"dim_products.write.format(\"delta\").mode(\"overwrite\").save(f\"{gold_path}/dim_products\")\n",
+					"display(f\"DONE! Written: {dim_products.count():,} products\")\n",
+					"\n",
+					"display(\"Writing dim_sellers\")\n",
+					"dim_sellers.write.format(\"delta\").mode(\"overwrite\").save(f\"{gold_path}/dim_sellers\")\n",
+					"display(f\"DONE! Written: {dim_sellers.count():,} sellers\")\n",
+					"\n",
+					"display(\"Writing dim_date\")\n",
+					"dim_date.write.format(\"delta\").mode(\"overwrite\").save(f\"{gold_path}/dim_date\")\n",
+					"display(f\"DONE! Written: {dim_date.count():,} dates\")\n",
+					"\n",
+					"\n",
+					"display(\"Writing fact_sales (partitioned by year)\")\n",
+					"fact_sales_with_year = fact_sales.withColumn(\"year\", F.substring(F.col(\"date_id\").cast(\"string\"), 1, 4))\n",
+					"fact_sales_with_year.write.format(\"delta\").mode(\"overwrite\").partitionBy(\"year\").save(f\"{gold_path}/fact_sales\")\n",
+					"display(f\"DONE! Written: {fact_sales.count():,} transactions\")"
+				],
+				"execution_count": 23
 			}
 		]
 	}
